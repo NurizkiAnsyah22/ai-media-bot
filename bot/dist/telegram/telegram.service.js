@@ -52,12 +52,35 @@ let TelegramService = TelegramService_1 = class TelegramService {
                     languageCode: from.language_code,
                 }, correlationId);
                 this.logger.log(`[${correlationId}] User ${from.id} berhasil disinkronkan`);
-                await ctx.reply(`Halo, ${from.first_name ?? 'Sobat'}! 👋\n\nSelamat datang di AI Media Bot. Ketik /start kapan saja untuk kembali ke menu ini.`);
+                await ctx.reply(`Halo, ${from.first_name ?? 'Sobat'}! 👋\n\nSelamat datang di AI Media Bot. Pilih menu di bawah ini:`, {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: '🎬 Generate Media', callback_data: 'generate_media' }],
+                            [{ text: '💰 Cek Credit', callback_data: 'check_credit' }],
+                            [{ text: '📜 Riwayat', callback_data: 'history' }],
+                        ],
+                    },
+                });
             }
             catch (err) {
                 this.logger.error(`[${correlationId}] Gagal sync user ${from.id}: ${err.message}`);
                 await ctx.reply('Maaf, terjadi kendala saat memproses permintaan Anda. Silakan coba lagi dalam beberapa saat.');
             }
+        });
+        this.bot.action('generate_media', async (ctx) => {
+            const correlationId = ctx.correlationId;
+            this.logger.log(`[${correlationId}] Action 'generate_media' ditekan oleh ${ctx.from.id}`);
+            await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+        });
+        this.bot.action('check_credit', async (ctx) => {
+            const correlationId = ctx.correlationId;
+            this.logger.log(`[${correlationId}] Action 'check_credit' ditekan oleh ${ctx.from.id}`);
+            await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+        });
+        this.bot.action('history', async (ctx) => {
+            const correlationId = ctx.correlationId;
+            this.logger.log(`[${correlationId}] Action 'history' ditekan oleh ${ctx.from.id}`);
+            await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
         });
         this.bot.on('message', (ctx) => {
             const correlationId = ctx.correlationId;

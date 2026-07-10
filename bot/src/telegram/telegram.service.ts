@@ -43,7 +43,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`[${correlationId}] Selesai diproses — ${durationMs}ms`);
     });
 
-    // --- Task 1.5: /start handler end-to-end ---
+    // --- Task 1.5 + 1.6: /start handler dengan main menu ---
     this.bot.start(async (ctx) => {
       const correlationId = (ctx as any).correlationId;
       const from = ctx.from;
@@ -63,7 +63,16 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`[${correlationId}] User ${from.id} berhasil disinkronkan`);
 
         await ctx.reply(
-          `Halo, ${from.first_name ?? 'Sobat'}! 👋\n\nSelamat datang di AI Media Bot. Ketik /start kapan saja untuk kembali ke menu ini.`,
+          `Halo, ${from.first_name ?? 'Sobat'}! 👋\n\nSelamat datang di AI Media Bot. Pilih menu di bawah ini:`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: '🎬 Generate Media', callback_data: 'generate_media' }],
+                [{ text: '💰 Cek Credit', callback_data: 'check_credit' }],
+                [{ text: '📜 Riwayat', callback_data: 'history' }],
+              ],
+            },
+          },
         );
       } catch (err) {
         this.logger.error(
@@ -75,6 +84,26 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
+    // --- Task 1.6: Main Menu Skeleton (belum ada logic bisnis) ---
+    this.bot.action('generate_media', async (ctx) => {
+      const correlationId = (ctx as any).correlationId;
+      this.logger.log(`[${correlationId}] Action 'generate_media' ditekan oleh ${ctx.from.id}`);
+      await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+    });
+
+    this.bot.action('check_credit', async (ctx) => {
+      const correlationId = (ctx as any).correlationId;
+      this.logger.log(`[${correlationId}] Action 'check_credit' ditekan oleh ${ctx.from.id}`);
+      await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+    });
+
+    this.bot.action('history', async (ctx) => {
+      const correlationId = (ctx as any).correlationId;
+      this.logger.log(`[${correlationId}] Action 'history' ditekan oleh ${ctx.from.id}`);
+      await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+    });
+
+    // Handler generic — HANYA SATU, di posisi paling akhir
     this.bot.on('message', (ctx) => {
       const correlationId = (ctx as any).correlationId;
       this.logger.log(`[${correlationId}] Update diterima dari chatId: ${ctx.chat.id}`);
