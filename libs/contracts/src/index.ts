@@ -1,0 +1,1 @@
+export * from './user/sync-user.contract';
