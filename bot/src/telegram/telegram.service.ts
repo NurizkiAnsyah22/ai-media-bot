@@ -7,13 +7,17 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
 import { randomUUID } from 'crypto';
+import { ApiClientService } from '../common/http/api-client.service';
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
   private bot: Telegraf;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly apiClientService: ApiClientService,
+  ) {}
 
   async onModuleInit() {
     const token = this.configService.get<string>('BOT_TOKEN');
@@ -24,7 +28,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot = new Telegraf(token);
 
-    // Middleware correlation ID — jalan untuk SEMUA jenis update, sebelum handler apa pun
     this.bot.use(async (ctx, next) => {
       const correlationId = randomUUID();
       (ctx as any).correlationId = correlationId;
@@ -38,6 +41,38 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
       const durationMs = Date.now() - startTime;
       this.logger.log(`[${correlationId}] Selesai diproses — ${durationMs}ms`);
+    });
+
+    // --- Task 1.5: /start handler end-to-end ---
+    this.bot.start(async (ctx) => {
+      const correlationId = (ctx as any).correlationId;
+      const from = ctx.from;
+
+      try {
+        await this.apiClientService.syncUser(
+          {
+            telegramId: String(from.id),
+            firstName: from.first_name,
+            lastName: from.last_name,
+            username: from.username,
+            languageCode: from.language_code,
+          },
+          correlationId,
+        );
+
+        this.logger.log(`[${correlationId}] User ${from.id} berhasil disinkronkan`);
+
+        await ctx.reply(
+          `Halo, ${from.first_name ?? 'Sobat'}! 👋\n\nSelamat datang di AI Media Bot. Ketik /start kapan saja untuk kembali ke menu ini.`,
+        );
+      } catch (err) {
+        this.logger.error(
+          `[${correlationId}] Gagal sync user ${from.id}: ${(err as Error).message}`,
+        );
+        await ctx.reply(
+          'Maaf, terjadi kendala saat memproses permintaan Anda. Silakan coba lagi dalam beberapa saat.',
+        );
+      }
     });
 
     this.bot.on('message', (ctx) => {

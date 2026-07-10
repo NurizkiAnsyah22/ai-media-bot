@@ -41,12 +41,15 @@ export class ApiClientService {
         );
         return response.data;
       } catch (err) {
-        lastError = err;
-        const axiosErr = err as AxiosError;
-        this.logger.warn(
-          `[${correlationId}] POST ${url} gagal (percobaan ${attempt}/${totalAttempts}): ${axiosErr.message}`,
-        );
-      }
+  lastError = err;
+  const axiosErr = err as AxiosError;
+  const status = axiosErr.response?.status;
+  const responseData = JSON.stringify(axiosErr.response?.data ?? {});
+  const errCode = (axiosErr as any).code;
+  this.logger.warn(
+    `[${correlationId}] POST ${url} gagal (percobaan ${attempt}/${totalAttempts}): status=${status} code=${errCode} message=${axiosErr.message} data=${responseData}`,
+  );
+}
     }
 
     throw lastError;
