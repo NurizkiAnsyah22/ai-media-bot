@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JobType } from '@prisma/client';
+import { BadRequestException } from '@nestjs/common';
 
 interface PricingKey {
   jobType: JobType;
@@ -38,10 +39,10 @@ export class PricingService {
     );
 
     if (!found) {
-      throw new Error(
-        `Pricing rule tidak ditemukan untuk kombinasi: ${JSON.stringify(params)}`,
-      );
-    }
+  throw new BadRequestException(
+    `Kombinasi tidak didukung: ${params.jobType}, duration=${params.duration}, mode=${params.mode}`,
+  );
+}
 
     return found.cost;
   }
