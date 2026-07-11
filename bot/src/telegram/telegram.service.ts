@@ -79,23 +79,65 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         this.logger.error(
           `[${correlationId}] Gagal sync user ${from.id}: ${(err as Error).message}`,
         );
-        await ctx.reply(
-          'Maaf, terjadi kendala saat memproses permintaan Anda. Silakan coba lagi dalam beberapa saat.',
-        );
+        try {
+          await ctx.reply(
+            'Maaf, terjadi kendala saat memproses permintaan Anda. Silakan coba lagi dalam beberapa saat.',
+          );
+        } catch (replyErr) {
+          this.logger.error(
+            `[${correlationId}] Gagal mengirim pesan error ke user ${from.id}: ${(replyErr as Error).message}`,
+          );
+        }
       }
     });
 
-    // --- Task 1.6: Main Menu Skeleton (belum ada logic bisnis) ---
+    // --- Task 1.6: Main Menu Skeleton ---
     this.bot.action('generate_media', async (ctx) => {
       const correlationId = (ctx as any).correlationId;
       this.logger.log(`[${correlationId}] Action 'generate_media' ditekan oleh ${ctx.from.id}`);
       await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
     });
 
+    // --- Task 2.2: Cek Credit Wiring ---
     this.bot.action('check_credit', async (ctx) => {
       const correlationId = (ctx as any).correlationId;
-      this.logger.log(`[${correlationId}] Action 'check_credit' ditekan oleh ${ctx.from.id}`);
-      await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+      const from = ctx.from;
+
+      this.logger.log(`[${correlationId}] Action 'check_credit' ditekan oleh ${from.id}`);
+      await ctx.answerCbQuery();
+
+      try {
+        const user = await this.apiClientService.syncUser(
+          {
+            telegramId: String(from.id),
+            firstName: from.first_name,
+            lastName: from.last_name,
+            username: from.username,
+            languageCode: from.language_code,
+          },
+          correlationId,
+        );
+
+        const { creditBalance } = await this.apiClientService.getCreditBalance(
+          user.id,
+          correlationId,
+        );
+
+        await ctx.reply(`💰 Saldo credit Anda saat ini: *${creditBalance}*`, {
+          parse_mode: 'Markdown',
+        });
+      } catch (err) {
+        this.logger.error(
+          `[${correlationId}] Gagal cek credit untuk user ${from.id}: ${(err as Error).message}`,
+        );
+        try {
+          await ctx.reply('Maaf, terjadi kendala saat mengambil data saldo. Silakan coba lagi.');
+        } catch (replyErr) {
+          this.logger.error(
+            `[${correlationId}] Gagal mengirim pesan error ke user ${from.id}: ${(replyErr as Error).message}`,
+          );
+        }
+      }
     });
 
     this.bot.action('history', async (ctx) => {
@@ -110,22 +152,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`[${correlationId}] Update diterima dari chatId: ${ctx.chat.id}`);
     });
 
-        // Telegraf's launch() adalah long-running promise yang TIDAK resolve
-// selama bot berjalan — resolve hanya terjadi saat bot.stop() dipanggil.
-// Gunakan callback launch() untuk deteksi "polling pertama kali berhasil".
-this.bot.launch(() => {
-  this.isReady = true;
-  this.logger.log('Telegram bot berhasil connect (long polling aktif)');
-});
+    // Telegraf's launch() adalah long-running promise yang TIDAK resolve
+    // selama bot berjalan — gunakan callback untuk deteksi "polling pertama kali berhasil".
+    this.bot.launch(() => {
+      this.isReady = true;
+      this.logger.log('Telegram bot berhasil connect (long polling aktif)');
+    });
 
-// Safety net: kalau setelah 15 detik belum ready, cukup log peringatan
-// (bukan menganggap gagal — launch() tetap berjalan di background)
-setTimeout(() => {
-  if (!this.isReady) {
-    this.logger.warn('bot.launch() belum ready setelah 15 detik, masih mencoba di background...');
-  }
-}, 15000);
-
+    setTimeout(() => {
+      if (!this.isReady) {
+        this.logger.warn('bot.launch() belum ready setelah 15 detik, masih mencoba di background...');
+      }
+    }, 15000);
   }
 
   onModuleDestroy() {
@@ -138,7 +176,6 @@ setTimeout(() => {
     return this.bot;
   }
 
-   // --- Task 1.7: dipakai oleh health controller ---
   isBotReady(): boolean {
     return this.isReady;
   }

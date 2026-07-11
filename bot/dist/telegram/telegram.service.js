@@ -65,7 +65,12 @@ let TelegramService = TelegramService_1 = class TelegramService {
             }
             catch (err) {
                 this.logger.error(`[${correlationId}] Gagal sync user ${from.id}: ${err.message}`);
-                await ctx.reply('Maaf, terjadi kendala saat memproses permintaan Anda. Silakan coba lagi dalam beberapa saat.');
+                try {
+                    await ctx.reply('Maaf, terjadi kendala saat memproses permintaan Anda. Silakan coba lagi dalam beberapa saat.');
+                }
+                catch (replyErr) {
+                    this.logger.error(`[${correlationId}] Gagal mengirim pesan error ke user ${from.id}: ${replyErr.message}`);
+                }
             }
         });
         this.bot.action('generate_media', async (ctx) => {
@@ -75,8 +80,31 @@ let TelegramService = TelegramService_1 = class TelegramService {
         });
         this.bot.action('check_credit', async (ctx) => {
             const correlationId = ctx.correlationId;
-            this.logger.log(`[${correlationId}] Action 'check_credit' ditekan oleh ${ctx.from.id}`);
-            await ctx.answerCbQuery('Fitur ini akan segera hadir 🚧');
+            const from = ctx.from;
+            this.logger.log(`[${correlationId}] Action 'check_credit' ditekan oleh ${from.id}`);
+            await ctx.answerCbQuery();
+            try {
+                const user = await this.apiClientService.syncUser({
+                    telegramId: String(from.id),
+                    firstName: from.first_name,
+                    lastName: from.last_name,
+                    username: from.username,
+                    languageCode: from.language_code,
+                }, correlationId);
+                const { creditBalance } = await this.apiClientService.getCreditBalance(user.id, correlationId);
+                await ctx.reply(`💰 Saldo credit Anda saat ini: *${creditBalance}*`, {
+                    parse_mode: 'Markdown',
+                });
+            }
+            catch (err) {
+                this.logger.error(`[${correlationId}] Gagal cek credit untuk user ${from.id}: ${err.message}`);
+                try {
+                    await ctx.reply('Maaf, terjadi kendala saat mengambil data saldo. Silakan coba lagi.');
+                }
+                catch (replyErr) {
+                    this.logger.error(`[${correlationId}] Gagal mengirim pesan error ke user ${from.id}: ${replyErr.message}`);
+                }
+            }
         });
         this.bot.action('history', async (ctx) => {
             const correlationId = ctx.correlationId;

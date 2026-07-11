@@ -3,7 +3,11 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import type { AxiosError } from 'axios';
-import type { SyncUserRequest, SyncUserResponse } from '@ai-media-bot/contracts';
+import type {
+  SyncUserRequest,
+  SyncUserResponse,
+  CreditBalanceResponse,
+} from '@ai-media-bot/contracts';
 
 @Injectable()
 export class ApiClientService {
@@ -24,6 +28,13 @@ export class ApiClientService {
     return this.post<SyncUserResponse>('/user/sync', payload, correlationId);
   }
 
+  async getCreditBalance(
+    userId: string,
+    correlationId: string,
+  ): Promise<CreditBalanceResponse> {
+    return this.get<CreditBalanceResponse>(`/user/${userId}/credits`, correlationId);
+  }
+
   private async post<T>(
     url: string,
     data: unknown,
@@ -41,15 +52,42 @@ export class ApiClientService {
         );
         return response.data;
       } catch (err) {
-  lastError = err;
-  const axiosErr = err as AxiosError;
-  const status = axiosErr.response?.status;
-  const responseData = JSON.stringify(axiosErr.response?.data ?? {});
-  const errCode = (axiosErr as any).code;
-  this.logger.warn(
-    `[${correlationId}] POST ${url} gagal (percobaan ${attempt}/${totalAttempts}): status=${status} code=${errCode} message=${axiosErr.message} data=${responseData}`,
-  );
-}
+        lastError = err;
+        const axiosErr = err as AxiosError;
+        const status = axiosErr.response?.status;
+        const responseData = JSON.stringify(axiosErr.response?.data ?? {});
+        const errCode = (axiosErr as any).code;
+        this.logger.warn(
+          `[${correlationId}] POST ${url} gagal (percobaan ${attempt}/${totalAttempts}): status=${status} code=${errCode} message=${axiosErr.message} data=${responseData}`,
+        );
+      }
+    }
+
+    throw lastError;
+  }
+
+  private async get<T>(url: string, correlationId: string): Promise<T> {
+    const totalAttempts = this.retryCount + 1;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= totalAttempts; attempt++) {
+      try {
+        const response = await firstValueFrom(
+          this.http.get<T>(url, {
+            headers: { 'X-Correlation-ID': correlationId },
+          }),
+        );
+        return response.data;
+      } catch (err) {
+        lastError = err;
+        const axiosErr = err as AxiosError;
+        const status = axiosErr.response?.status;
+        const responseData = JSON.stringify(axiosErr.response?.data ?? {});
+        const errCode = (axiosErr as any).code;
+        this.logger.warn(
+          `[${correlationId}] GET ${url} gagal (percobaan ${attempt}/${totalAttempts}): status=${status} code=${errCode} message=${axiosErr.message} data=${responseData}`,
+        );
+      }
     }
 
     throw lastError;
