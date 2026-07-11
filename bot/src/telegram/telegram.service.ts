@@ -110,21 +110,22 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`[${correlationId}] Update diterima dari chatId: ${ctx.chat.id}`);
     });
 
-        const launchWithTimeout = Promise.race([
-  this.bot.launch(),
-  new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Timeout: bot.launch() tidak selesai dalam 15 detik')), 15000),
-  ),
-]);
+        // Telegraf's launch() adalah long-running promise yang TIDAK resolve
+// selama bot berjalan — resolve hanya terjadi saat bot.stop() dipanggil.
+// Gunakan callback launch() untuk deteksi "polling pertama kali berhasil".
+this.bot.launch(() => {
+  this.isReady = true;
+  this.logger.log('Telegram bot berhasil connect (long polling aktif)');
+});
 
-launchWithTimeout
-  .then(() => {
-    this.isReady = true;
-    this.logger.log('Telegram bot berhasil connect (long polling aktif)');
-  })
-  .catch((err) => {
-    this.logger.error(`Gagal launch bot Telegram: ${(err as Error).message}`);
-  });
+// Safety net: kalau setelah 15 detik belum ready, cukup log peringatan
+// (bukan menganggap gagal — launch() tetap berjalan di background)
+setTimeout(() => {
+  if (!this.isReady) {
+    this.logger.warn('bot.launch() belum ready setelah 15 detik, masih mencoba di background...');
+  }
+}, 15000);
+
   }
 
   onModuleDestroy() {

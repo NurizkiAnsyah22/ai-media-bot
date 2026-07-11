@@ -87,18 +87,15 @@ let TelegramService = TelegramService_1 = class TelegramService {
             const correlationId = ctx.correlationId;
             this.logger.log(`[${correlationId}] Update diterima dari chatId: ${ctx.chat.id}`);
         });
-        const launchWithTimeout = Promise.race([
-            this.bot.launch(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: bot.launch() tidak selesai dalam 15 detik')), 15000)),
-        ]);
-        launchWithTimeout
-            .then(() => {
+        this.bot.launch(() => {
             this.isReady = true;
             this.logger.log('Telegram bot berhasil connect (long polling aktif)');
-        })
-            .catch((err) => {
-            this.logger.error(`Gagal launch bot Telegram: ${err.message}`);
         });
+        setTimeout(() => {
+            if (!this.isReady) {
+                this.logger.warn('bot.launch() belum ready setelah 15 detik, masih mencoba di background...');
+            }
+        }, 15000);
     }
     onModuleDestroy() {
         this.isReady = false;
