@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { envValidationSchema } from './config/env.validation';
 import { CreditModule } from './modules/credit/credit.module';
+import { PricingModule } from './modules/pricing/pricing.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CreditModule } from './modules/credit/credit.module';
     PrismaModule,
     UserModule,
     CreditModule,
+    PricingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

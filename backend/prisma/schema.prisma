@@ -9,6 +9,7 @@ datasource db {
 // --- ENUMS ---
 enum JobStatus {
   PENDING
+  SUBMITTED
   PROCESSING
   COMPLETED
   FAILED
@@ -141,8 +142,23 @@ model MediaJob {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user            User          @relation(fields: [userId], references: [id])
+  events          JobEvent[]    // <-- TAMBAHKAN BARIS INI
+
   @@index([userId, status, createdAt])
   @@map("media_jobs")
+}
+
+model JobEvent {
+  id        String    @id @default(uuid())
+  jobId     String    @map("job_id")
+  status    JobStatus
+  note      String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  job       MediaJob  @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+  @@map("job_events")
 }
 
 model PaymentTransaction {
