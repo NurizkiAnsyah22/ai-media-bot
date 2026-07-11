@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { envValidationSchema } from './config/env.validation';
+import { CreditModule } from './modules/credit/credit.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { envValidationSchema } from './config/env.validation';
     }),
     PrismaModule,
     UserModule,
+    CreditModule,
   ],
   controllers: [AppController],
   providers: [AppService],
