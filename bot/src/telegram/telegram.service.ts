@@ -13,6 +13,7 @@ import { ApiClientService } from '../common/http/api-client.service';
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
   private bot: Telegraf;
+  private isReady = false;
 
   constructor(
     private readonly configService: ConfigService,
@@ -109,16 +110,35 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`[${correlationId}] Update diterima dari chatId: ${ctx.chat.id}`);
     });
 
-    await this.bot.launch();
+        const launchWithTimeout = Promise.race([
+  this.bot.launch(),
+  new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Timeout: bot.launch() tidak selesai dalam 15 detik')), 15000),
+  ),
+]);
+
+launchWithTimeout
+  .then(() => {
+    this.isReady = true;
     this.logger.log('Telegram bot berhasil connect (long polling aktif)');
+  })
+  .catch((err) => {
+    this.logger.error(`Gagal launch bot Telegram: ${(err as Error).message}`);
+  });
   }
 
   onModuleDestroy() {
+    this.isReady = false;
     this.bot.stop('SIGTERM');
     this.logger.log('Telegram bot berhenti dengan bersih');
   }
 
   getBotInstance(): Telegraf {
     return this.bot;
+  }
+
+   // --- Task 1.7: dipakai oleh health controller ---
+  isBotReady(): boolean {
+    return this.isReady;
   }
 }

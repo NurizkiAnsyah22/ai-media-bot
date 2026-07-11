@@ -21,6 +21,7 @@ let TelegramService = TelegramService_1 = class TelegramService {
     apiClientService;
     logger = new common_1.Logger(TelegramService_1.name);
     bot;
+    isReady = false;
     constructor(configService, apiClientService) {
         this.configService = configService;
         this.apiClientService = apiClientService;
@@ -86,15 +87,29 @@ let TelegramService = TelegramService_1 = class TelegramService {
             const correlationId = ctx.correlationId;
             this.logger.log(`[${correlationId}] Update diterima dari chatId: ${ctx.chat.id}`);
         });
-        await this.bot.launch();
-        this.logger.log('Telegram bot berhasil connect (long polling aktif)');
+        const launchWithTimeout = Promise.race([
+            this.bot.launch(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout: bot.launch() tidak selesai dalam 15 detik')), 15000)),
+        ]);
+        launchWithTimeout
+            .then(() => {
+            this.isReady = true;
+            this.logger.log('Telegram bot berhasil connect (long polling aktif)');
+        })
+            .catch((err) => {
+            this.logger.error(`Gagal launch bot Telegram: ${err.message}`);
+        });
     }
     onModuleDestroy() {
+        this.isReady = false;
         this.bot.stop('SIGTERM');
         this.logger.log('Telegram bot berhenti dengan bersih');
     }
     getBotInstance() {
         return this.bot;
+    }
+    isBotReady() {
+        return this.isReady;
     }
 };
 exports.TelegramService = TelegramService;

@@ -12,13 +12,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
+const telegram_service_1 = require("./telegram/telegram.service");
 let AppController = class AppController {
     appService;
-    constructor(appService) {
+    telegramService;
+    constructor(appService, telegramService) {
         this.appService = appService;
+        this.telegramService = telegramService;
     }
     getHello() {
         return this.appService.getHello();
+    }
+    live() {
+        return { status: 'ok' };
+    }
+    ready() {
+        const isReady = this.telegramService.isBotReady();
+        return {
+            status: isReady ? 'ok' : 'not_ready',
+            telegram: isReady ? 'connected' : 'connecting',
+        };
     }
 };
 exports.AppController = AppController;
@@ -28,8 +41,21 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", String)
 ], AppController.prototype, "getHello", null);
+__decorate([
+    (0, common_1.Get)('health/live'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "live", null);
+__decorate([
+    (0, common_1.Get)('health/ready'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "ready", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [app_service_1.AppService])
+    __metadata("design:paramtypes", [app_service_1.AppService,
+        telegram_service_1.TelegramService])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map

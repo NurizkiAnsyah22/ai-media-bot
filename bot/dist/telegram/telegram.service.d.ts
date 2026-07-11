@@ -7,8 +7,10 @@ export declare class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly apiClientService;
     private readonly logger;
     private bot;
+    private isReady;
     constructor(configService: ConfigService, apiClientService: ApiClientService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): void;
     getBotInstance(): Telegraf;
+    isBotReady(): boolean;
 }
