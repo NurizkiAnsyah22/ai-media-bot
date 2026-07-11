@@ -1,10 +1,11 @@
-import { Controller, Post, Body, Inject, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Inject, Logger } from '@nestjs/common';
 import { CreateJobDto } from './dto/create-job.dto';
 import { JobService } from './job.service';
 import { CreditService } from '../credit/credit.service';
 import { PricingService } from '../pricing/pricing.service';
 import { JOB_EXECUTOR } from './interfaces/job-executor.interface';
 import type { IJobExecutor } from './interfaces/job-executor.interface';
+
 
 @Controller('jobs')
 export class JobController {
@@ -78,6 +79,11 @@ export class JobController {
       throw err;
     }
   }
+
+  @Get(':id')
+async findOne(@Param('id') id: string) {
+  return this.jobService.findById(id);
+}
 
   private mapJobTypeToReason(type: string): 'GENERATE_VIDEO' | 'GENERATE_IMAGE' {
     return type.includes('VIDEO') ? 'GENERATE_VIDEO' : 'GENERATE_IMAGE';
