@@ -40,3 +40,8 @@ export interface CreditHistoryResponse {
   page: number;
   pageSize: number;
 }
+
+export interface CreditHistoryQuery {
+  page?: number;
+  pageSize?: number;
+}

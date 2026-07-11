@@ -50,6 +50,42 @@ export class CreditService {
     return user.creditBalance;
   }
 
+  async getHistory(
+  userId: string,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<{ items: any[]; total: number; page: number; pageSize: number }> {
+  const skip = (page - 1) * pageSize;
+
+  const [items, total] = await this.prisma.$transaction([
+    this.prisma.creditLedger.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    this.prisma.creditLedger.count({ where: { userId } }),
+  ]);
+
+  return {
+    items: items.map((item) => ({
+      id: item.id,
+      amount: item.amount,
+      balanceBefore: item.balanceBefore,
+      balanceAfter: item.balanceAfter,
+      type: item.type,
+      reason: item.reason,
+      note: item.note,
+      referenceType: item.referenceType,
+      referenceId: item.referenceId,
+      createdAt: item.createdAt.toISOString(),
+    })),
+    total,
+    page,
+    pageSize,
+  };
+}
+
   async deduct(params: DeductParams): Promise<CreditMutationResult> {
     const { userId, amount, reason, referenceType, referenceId, note } = params;
 
