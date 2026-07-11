@@ -9,6 +9,7 @@ import { UserModule } from './modules/user/user.module';
 import { envValidationSchema } from './config/env.validation';
 import { CreditModule } from './modules/credit/credit.module';
 import { PricingModule } from './modules/pricing/pricing.module';
+import { JobModule } from './modules/job/job.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PricingModule } from './modules/pricing/pricing.module';
     UserModule,
     CreditModule,
     PricingModule,
+    JobModule,
   ],
   controllers: [AppController],
   providers: [AppService],
